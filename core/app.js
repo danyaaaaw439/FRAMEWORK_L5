@@ -1,58 +1,61 @@
-const http = require('http')
-const Router = require('./router')
-const enhanceReq = require('./request')
-const enhanceRes = require('./response')
+const http = require('http');                 
+const Router = require('./router');           
+const enhanceReq = require('./request');      
+const enhanceRes = require('./response');     
 
 class Framework {
   constructor() {
-    this.middlewares = []
-    this.router = new Router()
+    this.middlewares = [];
+    this.router = new Router();
   }
 
-  use(fn) {
-    this.middlewares.push(fn)
+  use(middleware) {
+    this.middlewares.push(middleware);
   }
 
-  get(path, fn) {
-    this.router.register('GET', path, fn)
+  get(path, handler) {
+    this.router.register('GET', path, handler);
   }
 
-  post(path, fn) {
-    this.router.register('POST', path, fn)
+  post(path, handler) {
+    this.router.register('POST', path, handler);
   }
 
-  put(path, fn) {
-    this.router.register('PUT', path, fn)
+  put(path, handler) {
+    this.router.register('PUT', path, handler);
   }
 
-  patch(path, fn) {
-    this.router.register('PATCH', path, fn)
+  patch(path, handler) {
+    this.router.register('PATCH', path, handler);
   }
 
-  delete(path, fn) {
-    this.router.register('DELETE', path, fn)
+  delete(path, handler) {
+    this.router.register('DELETE', path, handler);
   }
 
-  listen(port, cb) {
+  listen(port, callback) {
     const server = http.createServer((req, res) => {
       enhanceReq(req, () => {
-        enhanceRes(res)
-        const run = i => {
-          if (i < this.middlewares.length) {
-            this.middlewares[i](req, res, () => run(i + 1))
+        enhanceRes(res);
+
+        const runMiddleware = (index) => {
+          if (index < this.middlewares.length) {
+            this.middlewares[index](req, res, () => runMiddleware(index + 1));
           } else {
-            this.router.handle(req, res)
+            this.router.handle(req, res);
           }
-        }
+        };
+
         try {
-          run(0)
-        } catch {
-          res.status(500).json({ error: 'Internal Server Error' })
+          runMiddleware(0);
+        } catch (err) {
+          res.status(500).json({ error: 'Internal Server Error' });
         }
-      })
-    })
-    server.listen(port, cb)
+      });
+    });
+
+    server.listen(port, callback);
   }
 }
 
-module.exports = Framework
+module.exports = Framework;
